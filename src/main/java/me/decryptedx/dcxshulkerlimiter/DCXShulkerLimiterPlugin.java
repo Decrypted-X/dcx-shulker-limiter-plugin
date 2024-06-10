@@ -1,14 +1,22 @@
 package me.decryptedx.dcxshulkerlimiter;
 
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class DCXShulkerLimiterPlugin extends JavaPlugin {
+    FileConfiguration config = getConfig();
     private InventoryListener inventoryListener;
 
     @Override
     public void onEnable() {
-        inventoryListener = new InventoryListener();
+        config.addDefault("PlayerShulkerLimit", -1);
+        config.addDefault("EnderChestShulkerLimit", -1);
+        config.addDefault("OtherShulkerLimit", -1);
+        config.options().copyDefaults(true);
+        saveConfig();
+
+        inventoryListener = new InventoryListener(config);
         getServer().getPluginManager().registerEvents(inventoryListener, this);
     }
 

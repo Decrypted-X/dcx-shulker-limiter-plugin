@@ -2,6 +2,7 @@ package me.decryptedx.dcxshulkerlimiter;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -14,6 +15,15 @@ import org.bukkit.permissions.PermissionAttachmentInfo;
 
 /// Listen to various inventory events.
 public class InventoryListener implements Listener {
+    /// The number of shulker boxes the player can have given by plugin configs.
+    private final int CONF_SHULKER_PLAYER_LIMIT;
+
+    /// The number of shulker boxes a player's ender chest can have given by plugin configs.
+    private final int CONF_SHULKER_ENDER_CHEST_LIMIT;
+
+    /// The number of shulker boxes other inventories can have given by plugin configs.
+    private final int CONF_SHULKER_OTHER_LIMIT;
+
     /// A list of all shulker box material types.
     private static final Material[] SHULKER_BOXES = {
             Material.SHULKER_BOX,
@@ -34,6 +44,12 @@ public class InventoryListener implements Listener {
             Material.YELLOW_SHULKER_BOX,
             Material.MAGENTA_SHULKER_BOX
     };
+
+    public InventoryListener(FileConfiguration config) {
+        CONF_SHULKER_PLAYER_LIMIT = config.getInt("PlayerShulkerLimit");
+        CONF_SHULKER_ENDER_CHEST_LIMIT = config.getInt("EnderChestShulkerLimit");
+        CONF_SHULKER_OTHER_LIMIT = config.getInt("OtherShulkerLimit");
+    }
 
     /**Check whether the material is a type of shulker box.
      *
@@ -98,13 +114,12 @@ public class InventoryListener implements Listener {
         if (inventory == null)
             return false;
 
-        boolean hasShulker = false;
-        String echestPermPrefix = "dcxshulkerlimiter.echest.limit.";
+        boolean hasShulker;
         String playerPermPrefix = "dcxshulkerlimiter.player.limit.";
+        String echestPermPrefix = "dcxshulkerlimiter.echest.limit.";
 
-        int enderChestLimit = -1;
-        int playerLimit = -1;
-        int otherLimit = -1;
+        int playerLimit = CONF_SHULKER_PLAYER_LIMIT;
+        int enderChestLimit = CONF_SHULKER_ENDER_CHEST_LIMIT;
 
         // get limits for shulker boxes from player permission nodes
         if (player != null) {
@@ -112,10 +127,10 @@ public class InventoryListener implements Listener {
                 String permission = attachmentInfo.getPermission();
 
                 try {
-                    if (permission.startsWith(echestPermPrefix))
-                        enderChestLimit = integerValueFromPermission(permission);
-                    else if (permission.startsWith(playerPermPrefix))
+                    if (permission.startsWith(playerPermPrefix))
                         playerLimit = integerValueFromPermission(permission);
+                    else if (permission.startsWith(echestPermPrefix))
+                        enderChestLimit = integerValueFromPermission(permission);
                 }
                 catch (NumberFormatException | IndexOutOfBoundsException ignored) {}
             }
@@ -123,9 +138,9 @@ public class InventoryListener implements Listener {
 
         // check whether the inventory of each type has the max shulker amount
         switch (inventory.getType()) {
-            case ENDER_CHEST -> hasShulker = containsShulkerBox(inventory, enderChestLimit);
             case PLAYER -> hasShulker = containsShulkerBox(inventory, playerLimit);
-            case BARREL, CHEST, DISPENSER, DROPPER, HOPPER -> hasShulker = containsShulkerBox(inventory, otherLimit);
+            case ENDER_CHEST -> hasShulker = containsShulkerBox(inventory, enderChestLimit);
+            default -> hasShulker = containsShulkerBox(inventory, CONF_SHULKER_OTHER_LIMIT);
         }
 
         return hasShulker;
@@ -141,11 +156,27 @@ public class InventoryListener implements Listener {
 
         // check clicked inventory for shulker boxes for any place actions
         if ((action == InventoryAction.PLACE_ALL || action == InventoryAction.PLACE_ONE ||
-                action == InventoryAction.PLACE_SOME || action == InventoryAction.SWAP_WITH_CURSOR) &&
-                event.getCursor() != null && isShulkerBox(event.getCursor().getType()) &&
-                checkMaxShulker(event.getClickedInventory(), player)) {
+                action == InventoryAction.PLACE_SOME) && event.getCursor() != null &&
+                isShulkerBox(event.getCursor().getType()) && checkMaxShulker(event.getClickedInventory(), player)) {
             event.setCancelled(true);
             event.getWhoClicked().sendMessage(ChatColor.RED + "Unable to move shulker box!");
+        }
+        // check clicked inventory and cursor for shulker boxes for swap action
+        else if (action == InventoryAction.SWAP_WITH_CURSOR) {
+            ItemStack heldItem = event.getCursor();
+            ItemStack otherItem = event.getCurrentItem();
+
+            // swapping a shulker box with a shulker box does not need to be checked
+            if (heldItem != null && otherItem != null && isShulkerBox(heldItem.getType()) &&
+                    isShulkerBox(otherItem.getType()))
+                return;
+
+            // check clicked inventory for shulker box if cursor is shulker box
+            if (heldItem != null && isShulkerBox(heldItem.getType()) &&
+                    checkMaxShulker(event.getClickedInventory(), player)) {
+                event.setCancelled(true);
+                event.getWhoClicked().sendMessage(ChatColor.RED + "Unable to move shulker box!");
+            }
         }
         // check other inventory for shulker boxes when moving
         else if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY && event.getCurrentItem() != null &&
