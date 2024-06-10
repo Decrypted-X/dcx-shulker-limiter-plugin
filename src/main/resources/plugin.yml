@@ -1,0 +1,5 @@
+name: DCXShulkerLimiter
+version: 1.0.0
+author: DecryptedX
+main: me.decryptedx.dcxshulkerlimiter.DCXShulkerLimiterPlugin
+api-version: 1.18
