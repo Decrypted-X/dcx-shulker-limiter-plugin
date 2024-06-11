@@ -45,6 +45,10 @@ public class InventoryListener implements Listener {
             Material.MAGENTA_SHULKER_BOX
     };
 
+    // Permission nodes, append with integer on end to determine limit
+    private final static String PLAYER_PERM_PREFIX = "dcxshulkerlimiter.player.limit.";
+    private final static String ENDER_CHEST_PERM_PREFIX = "dcxshulkerlimiter.echest.limit.";
+
     public InventoryListener(FileConfiguration config) {
         CONF_SHULKER_PLAYER_LIMIT = config.getInt("PlayerShulkerLimit");
         CONF_SHULKER_ENDER_CHEST_LIMIT = config.getInt("EnderChestShulkerLimit");
@@ -94,17 +98,6 @@ public class InventoryListener implements Listener {
         return false;
     }
 
-    /**Get the integer value of a permission.
-     *
-     * @param permission The permission to get the integer value from.
-     * @return An integer that is the value retrieved from the permission.
-     * @throws NumberFormatException Thrown if permission contains invalid value.
-     * @throws IndexOutOfBoundsException Thrown if permission is in invalid format.
-     */
-    private int integerValueFromPermission(String permission) throws NumberFormatException, IndexOutOfBoundsException {
-        return Integer.parseInt(permission.substring(permission.lastIndexOf(".") + 1));
-    }
-
     /**Check whether the inventory has the max allowed shulker boxes.
      *
      * @param inventory The inventory to check if it has the max allowed shulker boxes given its type.
@@ -114,36 +107,33 @@ public class InventoryListener implements Listener {
         if (inventory == null)
             return false;
 
-        boolean hasShulker;
-        String playerPermPrefix = "dcxshulkerlimiter.player.limit.";
-        String echestPermPrefix = "dcxshulkerlimiter.echest.limit.";
+        final DCXPermissionLimitExtractor extractor = new DCXPermissionLimitExtractor(player);
 
-        int playerLimit = CONF_SHULKER_PLAYER_LIMIT;
-        int enderChestLimit = CONF_SHULKER_ENDER_CHEST_LIMIT;
+        return switch (inventory.getType()) {
+            case PLAYER -> containsShulkerBox(
+                    inventory,
+                    extractor.getLimit(PLAYER_PERM_PREFIX, CONF_SHULKER_PLAYER_LIMIT)
+            );
+            case ENDER_CHEST -> containsShulkerBox(
+                    inventory,
+                    extractor.getLimit(ENDER_CHEST_PERM_PREFIX, CONF_SHULKER_ENDER_CHEST_LIMIT)
+            );
+            default -> containsShulkerBox(
+                    inventory,
+                    CONF_SHULKER_OTHER_LIMIT
+            );
+        };
+    }
 
-        // get limits for shulker boxes from player permission nodes
-        if (player != null) {
-            for (PermissionAttachmentInfo attachmentInfo : player.getEffectivePermissions()) {
-                String permission = attachmentInfo.getPermission();
-
-                try {
-                    if (permission.startsWith(playerPermPrefix))
-                        playerLimit = integerValueFromPermission(permission);
-                    else if (permission.startsWith(echestPermPrefix))
-                        enderChestLimit = integerValueFromPermission(permission);
-                }
-                catch (NumberFormatException | IndexOutOfBoundsException ignored) {}
-            }
-        }
-
-        // check whether the inventory of each type has the max shulker amount
-        switch (inventory.getType()) {
-            case PLAYER -> hasShulker = containsShulkerBox(inventory, playerLimit);
-            case ENDER_CHEST -> hasShulker = containsShulkerBox(inventory, enderChestLimit);
-            default -> hasShulker = containsShulkerBox(inventory, CONF_SHULKER_OTHER_LIMIT);
-        }
-
-        return hasShulker;
+    /**Get the integer value of a permission.
+     *
+     * @param permission The permission to get the integer value from.
+     * @return An integer that is the value retrieved from the permission.
+     * @throws NumberFormatException Thrown if permission contains invalid value.
+     * @throws IndexOutOfBoundsException Thrown if permission is in invalid format.
+     */
+    public static int integerValueFromPermission(String permission) throws NumberFormatException, IndexOutOfBoundsException {
+        return Integer.parseInt(permission.substring(permission.lastIndexOf(".") + 1));
     }
 
     @EventHandler (priority = EventPriority.LOWEST)
