@@ -28,7 +28,7 @@ public class InventoryListener implements Listener {
     private final static String PLAYER_PERM_PREFIX = "dcxshulkerlimiter.player.limit.";
 
     /// The prefix for the ender chest shulker permission node.
-    private final static String ECHEST_PERM_PREFIX = "dcxshulkerlimiter.echest.limit.";
+    private final static String ENDER_CHEST_PERM_PREFIX = "dcxshulkerlimiter.echest.limit.";
 
     /// A list of all shulker box material types.
     private static final Material[] SHULKER_BOXES = {
@@ -117,17 +117,6 @@ public class InventoryListener implements Listener {
         }
 
         return false;
-    }
-
-    /**Get the integer value of a permission.
-     *
-     * @param permission The permission to get the integer value from.
-     * @return An integer that is the value retrieved from the permission.
-     * @throws NumberFormatException Thrown if permission contains invalid value.
-     * @throws IndexOutOfBoundsException Thrown if permission is in invalid format.
-     */
-    private int integerValueFromPermission(String permission) throws NumberFormatException, IndexOutOfBoundsException {
-        return Integer.parseInt(permission.substring(permission.lastIndexOf(".") + 1));
     }
 
     /**Check whether the inventory has the max allowed shulker boxes.
