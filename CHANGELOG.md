@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.1.1] - 2024-06-11
 
+### Changed
+
+- Separated retrieving limits into a separate method.
+
 ### Fixed
+
+- Use max permission node instead of last retrieved.
 - Fixed shulker box exceeding limit on inventory close event.
 
 

@@ -12,7 +12,6 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.permissions.PermissionAttachmentInfo;
 
 /// Listen to various inventory events.
 public class InventoryListener implements Listener {
@@ -26,10 +25,10 @@ public class InventoryListener implements Listener {
     private final int CONF_SHULKER_OTHER_LIMIT;
 
     /// The prefix for the player shulker permission node.
-    private final String PLAYER_PERM_PREFIX = "dcxshulkerlimiter.player.limit.";
+    private final static String PLAYER_PERM_PREFIX = "dcxshulkerlimiter.player.limit.";
 
     /// The prefix for the ender chest shulker permission node.
-    private final String ECHEST_PERM_PREFIX = "dcxshulkerlimiter.echest.limit.";
+    private final static String ECHEST_PERM_PREFIX = "dcxshulkerlimiter.echest.limit.";
 
     /// A list of all shulker box material types.
     private static final Material[] SHULKER_BOXES = {
@@ -131,29 +130,6 @@ public class InventoryListener implements Listener {
         return Integer.parseInt(permission.substring(permission.lastIndexOf(".") + 1));
     }
 
-    /**Get the max shulkers a player can hold from permission node or config.
-     *
-     * @param player The player to get max shulker amount for.
-     * @return An integer that represents the max number of shulkers a player can hold.
-     */
-    private int getMaxPlayerShulkers(Player player) {
-        if (player == null)
-            return CONF_SHULKER_PLAYER_LIMIT;
-
-        // get player limit for shulker boxes from player permission nodes
-        for (PermissionAttachmentInfo attachmentInfo : player.getEffectivePermissions()) {
-            String permission = attachmentInfo.getPermission();
-
-            try {
-                if (permission.startsWith(PLAYER_PERM_PREFIX))
-                    return integerValueFromPermission(permission);
-            }
-            catch (NumberFormatException | IndexOutOfBoundsException ignored) {}
-        }
-
-        return CONF_SHULKER_PLAYER_LIMIT;
-    }
-
     /**Check whether the inventory has the max allowed shulker boxes.
      *
      * @param inventory The inventory to check if it has the max allowed shulker boxes given its type.
@@ -163,33 +139,20 @@ public class InventoryListener implements Listener {
         if (inventory == null)
             return false;
 
-        boolean hasShulker;
-        int playerLimit = CONF_SHULKER_PLAYER_LIMIT;
-        int enderChestLimit = CONF_SHULKER_ENDER_CHEST_LIMIT;
-
-        // get limits for shulker boxes from player permission nodes
-        if (player != null) {
-            for (PermissionAttachmentInfo attachmentInfo : player.getEffectivePermissions()) {
-                String permission = attachmentInfo.getPermission();
-
-                try {
-                    if (permission.startsWith(PLAYER_PERM_PREFIX))
-                        playerLimit = integerValueFromPermission(permission);
-                    else if (permission.startsWith(ECHEST_PERM_PREFIX))
-                        enderChestLimit = integerValueFromPermission(permission);
-                }
-                catch (NumberFormatException | IndexOutOfBoundsException ignored) {}
-            }
-        }
-
-        // check whether the inventory of each type has the max shulker amount
-        switch (inventory.getType()) {
-            case PLAYER -> hasShulker = containsShulkerBox(inventory, playerLimit);
-            case ENDER_CHEST -> hasShulker = containsShulkerBox(inventory, enderChestLimit);
-            default -> hasShulker = containsShulkerBox(inventory, CONF_SHULKER_OTHER_LIMIT);
-        }
-
-        return hasShulker;
+        return switch (inventory.getType()) {
+            case PLAYER -> containsShulkerBox(
+                    inventory,
+                    PermissionLimitExtractor.getLimit(player, PLAYER_PERM_PREFIX, CONF_SHULKER_PLAYER_LIMIT)
+            );
+            case ENDER_CHEST -> containsShulkerBox(
+                    inventory,
+                    PermissionLimitExtractor.getLimit(player, ENDER_CHEST_PERM_PREFIX, CONF_SHULKER_ENDER_CHEST_LIMIT)
+            );
+            default -> containsShulkerBox(
+                    inventory,
+                    CONF_SHULKER_OTHER_LIMIT
+            );
+        };
     }
 
     @EventHandler (priority = EventPriority.LOWEST)
@@ -286,7 +249,8 @@ public class InventoryListener implements Listener {
     @EventHandler (priority = EventPriority.LOWEST)
     public void onEntityPickupItemEvent(EntityPickupItemEvent event) {
         // cancel any additional shulker boxes from being picked up by a player
-        if (event.getEntity() instanceof Player player && checkMaxShulker(player.getInventory(), player))
+        if (isShulkerBox(event.getItem().getItemStack().getType()) && event.getEntity() instanceof Player player &&
+                checkMaxShulker(player.getInventory(), player))
             event.setCancelled(true);
     }
 
@@ -294,7 +258,7 @@ public class InventoryListener implements Listener {
     public void onInventoryCloseEvent(InventoryCloseEvent event) {
         if (event.getPlayer() instanceof Player player) {
             int currentShulker = getShulkerBoxAmount(player);
-            int maxShulker = getMaxPlayerShulkers(player);
+            int maxShulker = PermissionLimitExtractor.getLimit(player, PLAYER_PERM_PREFIX, CONF_SHULKER_PLAYER_LIMIT);
             InventoryType inventoryType = event.getView().getType();
             Inventory otherInventory = event.getView().getTopInventory();
             ItemStack currentItem = player.getItemOnCursor();
