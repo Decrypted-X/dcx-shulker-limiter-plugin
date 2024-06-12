@@ -32,7 +32,8 @@ OtherShulkerLimit: -1
 
 ## Permission Nodes
 Permission nodes can be used to change the shulker box limits. If a permission node is not defined, the default value is
-defined in the config file.
+defined in the config file. The permission node with the highest value set for a player will be the permission node used
+if there are multiple definitions of the same permission node.
 
 ### Supported Nodes
 Replace the `#` with the actual number of shulker boxes you want to set as the limit. A negative
