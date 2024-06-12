@@ -3,6 +3,7 @@ package me.decryptedx.dcxshulkerlimiter;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -22,6 +23,12 @@ public class InventoryListener implements Listener {
 
     /// The number of shulker boxes other inventories can have given by plugin configs.
     private final int CONF_SHULKER_OTHER_LIMIT;
+
+    /// The prefix for the player shulker permission node.
+    private final static String PLAYER_PERM_PREFIX = "dcxshulkerlimiter.player.limit.";
+
+    /// The prefix for the ender chest shulker permission node.
+    private final static String ENDER_CHEST_PERM_PREFIX = "dcxshulkerlimiter.echest.limit.";
 
     /// A list of all shulker box material types.
     private static final Material[] SHULKER_BOXES = {
@@ -44,10 +51,6 @@ public class InventoryListener implements Listener {
             Material.MAGENTA_SHULKER_BOX
     };
 
-    // Permission nodes, append with integer on end to determine limit
-    private final static String PLAYER_PERM_PREFIX = "dcxshulkerlimiter.player.limit.";
-    private final static String ENDER_CHEST_PERM_PREFIX = "dcxshulkerlimiter.echest.limit.";
-
     public InventoryListener(FileConfiguration config) {
         CONF_SHULKER_PLAYER_LIMIT = config.getInt("PlayerShulkerLimit");
         CONF_SHULKER_ENDER_CHEST_LIMIT = config.getInt("EnderChestShulkerLimit");
@@ -65,6 +68,25 @@ public class InventoryListener implements Listener {
                 return true;
 
         return false;
+    }
+
+    /**Get the amount of shulker boxes in the player's inventory.
+     *
+     * @param player The player to check for shulker boxes.
+     * @return An integer that represents the number of shulker boxes in the player's inventory.
+     */
+    private int getShulkerBoxAmount(Player player) {
+        if (player == null)
+            return 0;
+
+        int amount = 0;
+
+        // get the total number of shulker boxes from the inventory
+        for (ItemStack itemStack : player.getInventory().getContents())
+            if (itemStack != null && isShulkerBox(itemStack.getType()))
+                amount++;
+
+        return amount;
     }
 
     /**Check whether the inventory given contains a type of shulker box.
@@ -219,6 +241,43 @@ public class InventoryListener implements Listener {
         if (isShulkerBox(event.getItem().getItemStack().getType()) && event.getEntity() instanceof Player player &&
                 checkMaxShulker(player.getInventory(), player))
             event.setCancelled(true);
+    }
+
+    @EventHandler (priority = EventPriority.LOWEST)
+    public void onInventoryCloseEvent(InventoryCloseEvent event) {
+        if (event.getPlayer() instanceof Player player) {
+            int currentShulker = getShulkerBoxAmount(player);
+            int maxShulker = PermissionLimitExtractor.getLimit(player, PLAYER_PERM_PREFIX, CONF_SHULKER_PLAYER_LIMIT);
+            InventoryType inventoryType = event.getView().getType();
+            Inventory otherInventory = event.getView().getTopInventory();
+            ItemStack currentItem = player.getItemOnCursor();
+
+            // drop shulker box on cursor if shulker box is over max limit
+            if (isShulkerBox(currentItem.getType()) && currentShulker++ >= maxShulker) {
+                player.setItemOnCursor(new ItemStack(Material.AIR));
+                Item droppedItem = player.getWorld().dropItemNaturally(player.getLocation(), currentItem);
+                droppedItem.setPickupDelay(40);
+            }
+
+            // for inventories that return items, drop any shulker boxes that would exceed max inventory limit
+            if ((inventoryType == InventoryType.CRAFTING || inventoryType == InventoryType.WORKBENCH ||
+                    inventoryType == InventoryType.ENCHANTING || inventoryType == InventoryType.ANVIL ||
+                    inventoryType == InventoryType.SMITHING || inventoryType == InventoryType.STONECUTTER ||
+                    inventoryType == InventoryType.MERCHANT) && containsShulkerBox(otherInventory, 1)) {
+
+                ItemStack[] otherContents = otherInventory.getContents();
+
+                for (int i = 0; i < otherContents.length; ++i) {
+                    currentItem = otherContents[i];
+
+                    if (currentItem != null && isShulkerBox(currentItem.getType()) && currentShulker++ >= maxShulker) {
+                        otherInventory.setItem(i, new ItemStack(Material.AIR));
+                        Item droppedItem = player.getWorld().dropItemNaturally(player.getLocation(), currentItem);
+                        droppedItem.setPickupDelay(40);
+                    }
+                }
+            }
+        }
     }
 
     @EventHandler (priority = EventPriority.LOWEST)
