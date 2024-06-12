@@ -11,7 +11,6 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.permissions.PermissionAttachmentInfo;
 
 /// Listen to various inventory events.
 public class InventoryListener implements Listener {
@@ -107,33 +106,20 @@ public class InventoryListener implements Listener {
         if (inventory == null)
             return false;
 
-        final DCXPermissionLimitExtractor extractor = new DCXPermissionLimitExtractor(player);
-
         return switch (inventory.getType()) {
             case PLAYER -> containsShulkerBox(
                     inventory,
-                    extractor.getLimit(PLAYER_PERM_PREFIX, CONF_SHULKER_PLAYER_LIMIT)
+                    PermissionLimitExtractor.getLimit(player, PLAYER_PERM_PREFIX, CONF_SHULKER_PLAYER_LIMIT)
             );
             case ENDER_CHEST -> containsShulkerBox(
                     inventory,
-                    extractor.getLimit(ENDER_CHEST_PERM_PREFIX, CONF_SHULKER_ENDER_CHEST_LIMIT)
+                    PermissionLimitExtractor.getLimit(player, ENDER_CHEST_PERM_PREFIX, CONF_SHULKER_ENDER_CHEST_LIMIT)
             );
             default -> containsShulkerBox(
                     inventory,
                     CONF_SHULKER_OTHER_LIMIT
             );
         };
-    }
-
-    /**Get the integer value of a permission.
-     *
-     * @param permission The permission to get the integer value from.
-     * @return An integer that is the value retrieved from the permission.
-     * @throws NumberFormatException Thrown if permission contains invalid value.
-     * @throws IndexOutOfBoundsException Thrown if permission is in invalid format.
-     */
-    public static int integerValueFromPermission(String permission) throws NumberFormatException, IndexOutOfBoundsException {
-        return Integer.parseInt(permission.substring(permission.lastIndexOf(".") + 1));
     }
 
     @EventHandler (priority = EventPriority.LOWEST)
