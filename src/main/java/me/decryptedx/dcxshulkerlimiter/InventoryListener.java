@@ -1,6 +1,5 @@
 package me.decryptedx.dcxshulkerlimiter;
 
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -14,8 +13,6 @@ import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachmentInfo;
-
-import java.util.Arrays;
 
 /// Listen to various inventory events.
 public class InventoryListener implements Listener {
@@ -308,8 +305,6 @@ public class InventoryListener implements Listener {
                 Item droppedItem = player.getWorld().dropItemNaturally(player.getLocation(), currentItem);
                 droppedItem.setPickupDelay(40);
             }
-
-            Bukkit.getLogger().info(Arrays.toString(otherInventory.getContents()));
 
             // for inventories that return items, drop any shulker boxes that would exceed max inventory limit
             if ((inventoryType == InventoryType.CRAFTING || inventoryType == InventoryType.WORKBENCH ||
