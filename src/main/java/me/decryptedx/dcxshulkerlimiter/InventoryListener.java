@@ -1,5 +1,6 @@
 package me.decryptedx.dcxshulkerlimiter;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -13,6 +14,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 
+import java.util.logging.Level;
+
 /// Listen to various inventory events.
 public class InventoryListener implements Listener {
     /// The number of shulker boxes the player can have given by plugin configs.
@@ -23,6 +26,8 @@ public class InventoryListener implements Listener {
 
     /// The number of shulker boxes other inventories can have given by plugin configs.
     private final int CONF_SHULKER_OTHER_LIMIT;
+
+    private final boolean CONF_ADDITIVE;
 
     /// A list of all shulker box material types.
     private static final Material[] SHULKER_BOXES = {
@@ -53,6 +58,7 @@ public class InventoryListener implements Listener {
         CONF_SHULKER_PLAYER_LIMIT = config.getInt("PlayerShulkerLimit");
         CONF_SHULKER_ENDER_CHEST_LIMIT = config.getInt("EnderChestShulkerLimit");
         CONF_SHULKER_OTHER_LIMIT = config.getInt("OtherShulkerLimit");
+        CONF_ADDITIVE = config.getBoolean("AdditivePermission");
     }
 
     /**Check whether the material is a type of shulker box.
@@ -107,22 +113,51 @@ public class InventoryListener implements Listener {
         if (inventory == null)
             return false;
 
-        final DCXPermissionLimitExtractor extractor = new DCXPermissionLimitExtractor(player);
-
         return switch (inventory.getType()) {
             case PLAYER -> containsShulkerBox(
                     inventory,
-                    extractor.getLimit(PLAYER_PERM_PREFIX, CONF_SHULKER_PLAYER_LIMIT)
+                    getShulkerLimit(player, PLAYER_PERM_PREFIX, CONF_SHULKER_PLAYER_LIMIT, CONF_ADDITIVE)
             );
             case ENDER_CHEST -> containsShulkerBox(
                     inventory,
-                    extractor.getLimit(ENDER_CHEST_PERM_PREFIX, CONF_SHULKER_ENDER_CHEST_LIMIT)
+                    getShulkerLimit(player, ENDER_CHEST_PERM_PREFIX, CONF_SHULKER_ENDER_CHEST_LIMIT, CONF_ADDITIVE)
             );
             default -> containsShulkerBox(
                     inventory,
                     CONF_SHULKER_OTHER_LIMIT
             );
         };
+    }
+
+    public int getShulkerLimit(Player player, String prefix, int defaultValue, boolean additive) {
+        if (player == null) return defaultValue;
+
+        final int amount;
+
+        try {
+            if (additive) {
+                amount = player.getEffectivePermissions().stream()
+                               .map(PermissionAttachmentInfo::getPermission)
+                               .filter(permission -> permission.startsWith(prefix))
+                               .mapToInt(InventoryListener::integerValueFromPermission)
+                               .sum();
+            }
+            else {
+                amount = player.getEffectivePermissions().stream()
+                               .map(PermissionAttachmentInfo::getPermission)
+                               .filter(permission -> permission.startsWith(prefix))
+                               .mapToInt(InventoryListener::integerValueFromPermission)
+                               .max()
+                               .orElse(defaultValue);
+            }
+        } catch (NumberFormatException | IndexOutOfBoundsException e) {
+            Bukkit.getLogger().log(Level.SEVERE,
+                    "Permission node " + prefix + " for " + player.getName() +
+                            " has a non-integer value, returning default.");
+            return defaultValue;
+        }
+
+        return amount;
     }
 
     /**Get the integer value of a permission.
