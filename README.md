@@ -1,5 +1,5 @@
 # DCX Shulker Limiter Plugin
-![Plugin Version](https://img.shields.io/badge/plugin_version-1.1.0-blue)
+![Plugin Version](https://img.shields.io/badge/plugin_version-1.2.0-blue)
 ![Minecraft Version](https://img.shields.io/badge/mc_version-1.18.2-blue)
 
 A Minecraft server plugin that limits the number of shulker boxes that an inventory can hold.
@@ -22,17 +22,22 @@ permission node.
 `OtherShulkerLimit` - The shulker box limit for all other inventories; no permission node corresponds
 to this config.
 
+`AdditivePermission` - Whether the player and ender chest shulker box limits should be added together as the limit for
+all player-related inventories.
+
 ### Example Config File
 The following shows an example of the config file generated:
 ```yaml
 PlayerShulkerLimit: -1
 EnderChestShulkerLimit: -1
 OtherShulkerLimit: -1
+AdditivePermission: false
 ```
 
 ## Permission Nodes
 Permission nodes can be used to change the shulker box limits. If a permission node is not defined, the default value is
-defined in the config file.
+defined in the config file. The permission node with the highest value set for a player will be the permission node used
+if there are multiple definitions of the same permission node.
 
 ### Supported Nodes
 Replace the `#` with the actual number of shulker boxes you want to set as the limit. A negative
