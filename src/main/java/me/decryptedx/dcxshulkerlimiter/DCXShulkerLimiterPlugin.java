@@ -13,6 +13,7 @@ public class DCXShulkerLimiterPlugin extends JavaPlugin {
         config.addDefault("PlayerShulkerLimit", -1);
         config.addDefault("EnderChestShulkerLimit", -1);
         config.addDefault("OtherShulkerLimit", -1);
+        config.addDefault("AdditivePermission", false);
         config.options().copyDefaults(true);
         saveConfig();
 

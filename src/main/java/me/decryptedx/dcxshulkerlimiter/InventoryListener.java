@@ -1,5 +1,6 @@
 package me.decryptedx.dcxshulkerlimiter;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -12,6 +13,9 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.permissions.PermissionAttachmentInfo;
+
+import java.util.logging.Level;
 
 /// Listen to various inventory events.
 public class InventoryListener implements Listener {
@@ -23,6 +27,9 @@ public class InventoryListener implements Listener {
 
     /// The number of shulker boxes other inventories can have given by plugin configs.
     private final int CONF_SHULKER_OTHER_LIMIT;
+
+    /// Whether the limit of shulker boxes held is a total of all the configurations.
+    private final boolean CONF_ADDITIVE;
 
     /// The prefix for the player shulker permission node.
     private final static String PLAYER_PERM_PREFIX = "dcxshulkerlimiter.player.limit.";
@@ -55,6 +62,7 @@ public class InventoryListener implements Listener {
         CONF_SHULKER_PLAYER_LIMIT = config.getInt("PlayerShulkerLimit");
         CONF_SHULKER_ENDER_CHEST_LIMIT = config.getInt("EnderChestShulkerLimit");
         CONF_SHULKER_OTHER_LIMIT = config.getInt("OtherShulkerLimit");
+        CONF_ADDITIVE = config.getBoolean("AdditivePermission");
     }
 
     /**Check whether the material is a type of shulker box.
@@ -131,17 +139,59 @@ public class InventoryListener implements Listener {
         return switch (inventory.getType()) {
             case PLAYER -> containsShulkerBox(
                     inventory,
-                    PermissionLimitExtractor.getLimit(player, PLAYER_PERM_PREFIX, CONF_SHULKER_PLAYER_LIMIT)
+                    getShulkerLimit(player, PLAYER_PERM_PREFIX, CONF_SHULKER_PLAYER_LIMIT, CONF_ADDITIVE)
             );
             case ENDER_CHEST -> containsShulkerBox(
                     inventory,
-                    PermissionLimitExtractor.getLimit(player, ENDER_CHEST_PERM_PREFIX, CONF_SHULKER_ENDER_CHEST_LIMIT)
+                    getShulkerLimit(player, ENDER_CHEST_PERM_PREFIX, CONF_SHULKER_ENDER_CHEST_LIMIT, CONF_ADDITIVE)
             );
             default -> containsShulkerBox(
                     inventory,
                     CONF_SHULKER_OTHER_LIMIT
             );
         };
+    }
+
+    public int getShulkerLimit(Player player, String prefix, int defaultValue, boolean additive) {
+        if (player == null) return defaultValue;
+
+        final int amount;
+
+        try {
+            if (additive) {
+                amount = player.getEffectivePermissions().stream()
+                               .map(PermissionAttachmentInfo::getPermission)
+                               .filter(permission -> permission.startsWith(prefix))
+                               .mapToInt(InventoryListener::integerValueFromPermission)
+                               .sum();
+            }
+            else {
+                amount = player.getEffectivePermissions().stream()
+                               .map(PermissionAttachmentInfo::getPermission)
+                               .filter(permission -> permission.startsWith(prefix))
+                               .mapToInt(InventoryListener::integerValueFromPermission)
+                               .max()
+                               .orElse(defaultValue);
+            }
+        } catch (NumberFormatException | IndexOutOfBoundsException e) {
+            Bukkit.getLogger().log(Level.SEVERE,
+                    "Permission node " + prefix + " for " + player.getName() +
+                            " has a non-integer value, returning default.");
+            return defaultValue;
+        }
+
+        return amount;
+    }
+
+    /**Get the integer value of a permission.
+     *
+     * @param permission The permission to get the integer value from.
+     * @return An integer that is the value retrieved from the permission.
+     * @throws NumberFormatException Thrown if permission contains invalid value.
+     * @throws IndexOutOfBoundsException Thrown if permission is in invalid format.
+     */
+    public static int integerValueFromPermission(String permission) throws NumberFormatException, IndexOutOfBoundsException {
+        return Integer.parseInt(permission.substring(permission.lastIndexOf(".") + 1));
     }
 
     @EventHandler (priority = EventPriority.LOWEST)
