@@ -1,5 +1,6 @@
 package me.decryptedx.dcxshulkerlimiter;
 
+import com.Acrobot.ChestShop.Events.PreTransactionEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -342,5 +343,12 @@ public class InventoryListener implements Listener {
         // cancel any additional shulker boxes from being picked up
         if (isShulkerBox(event.getItem().getItemStack().getType()) && checkMaxShulker(event.getInventory(), null))
             event.setCancelled(true);
+    }
+
+    @EventHandler (priority = EventPriority.LOWEST)
+    public void onPreTransactionEvent(PreTransactionEvent event) {
+        // cancel any additional shulker boxes from being bought through chest shops
+        if (checkMaxShulker(event.getClientInventory(), event.getClient()))
+            event.setCancelled(PreTransactionEvent.TransactionOutcome.NOT_ENOUGH_SPACE_IN_INVENTORY);
     }
 }

@@ -28,5 +28,13 @@
             <version>1.18.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.Apache</groupId>
+            <artifactId>ChestShop</artifactId>
+            <version>3.12.1</version>
+            <scope>system</scope>
+            <systemPath>${pom.basedir}/lib/ChestShop.jar</systemPath>
+        </dependency>
     </dependencies>
 </project>
