@@ -22,7 +22,7 @@ public class DCXShulkerLimiterPlugin extends JavaPlugin {
         inventoryListener = new InventoryListener(config);
 
         final RegisteredServiceProvider<LuckPerms> rsp = getServer().getServicesManager().getRegistration(LuckPerms.class);
-        luckPerms = rsp.getProvider(); // should never return null, Vault is depended on by this plugin.
+        luckPerms = rsp.getProvider(); // should never return null, LP is depended on by this plugin.
 
         getServer().getPluginManager().registerEvents(inventoryListener, this);
     }
