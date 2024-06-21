@@ -1,5 +1,6 @@
 package me.decryptedx.dcxshulkerlimiter;
 
+import com.Acrobot.ChestShop.Events.PreTransactionEvent;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.node.Node;
 import net.luckperms.api.query.QueryOptions;
@@ -31,7 +32,7 @@ public class InventoryListener implements Listener {
     /// The number of shulker boxes other inventories can have given by plugin configs.
     private final int CONF_SHULKER_OTHER_LIMIT;
 
-    /// Whether the limit of shulker boxes held is a total of all the configurations.
+    /// Whether the limit of shulker boxes held is a total of all the config nodes.
     private final boolean CONF_ADDITIVE;
 
     /// The prefix for the player shulker permission node.
@@ -367,5 +368,12 @@ public class InventoryListener implements Listener {
         // cancel any additional shulker boxes from being picked up
         if (isShulkerBox(event.getItem().getItemStack().getType()) && checkMaxShulker(event.getInventory(), null))
             event.setCancelled(true);
+    }
+
+    @EventHandler (priority = EventPriority.LOWEST)
+    public void onPreTransactionEvent(PreTransactionEvent event) {
+        // cancel any additional shulker boxes from being bought through chest shops
+        if (checkMaxShulker(event.getClientInventory(), event.getClient()))
+            event.setCancelled(PreTransactionEvent.TransactionOutcome.NOT_ENOUGH_SPACE_IN_INVENTORY);
     }
 }

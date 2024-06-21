@@ -19,6 +19,10 @@
             <id>spigot-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
         </repository>
+        <repository>
+            <id>local-repo</id>
+            <url>file://${basedir}/lib</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -28,11 +32,18 @@
             <version>1.18.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>net.luckperms</groupId>
             <artifactId>api</artifactId>
             <version>5.4</version>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.Apache</groupId>
+            <artifactId>ChestShop</artifactId>
+            <version>3.12</version>
         </dependency>
     </dependencies>
 </project>
