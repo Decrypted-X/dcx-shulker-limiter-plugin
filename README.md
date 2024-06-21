@@ -4,6 +4,11 @@
 
 A Minecraft server plugin that limits the number of shulker boxes that an inventory can hold.
 
+## Dependencies
+
+The following dependencies are required for the plugin to work as intended:
+- ChestShop-3
+
 ## Config File
 > [!NOTE]
 > Values defined in the config file will be overwritten by any implemented permission nodes.

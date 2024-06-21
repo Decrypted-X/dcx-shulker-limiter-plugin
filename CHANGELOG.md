@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - AdditivePermission configuration.
+- Ability to block ChestShop transactions if shulker limit has been reached.
 
 
 ## [1.1.1] - 2024-06-11
