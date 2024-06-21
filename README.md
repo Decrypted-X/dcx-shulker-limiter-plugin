@@ -7,7 +7,7 @@ A Minecraft server plugin that limits the number of shulker boxes that an invent
 ## Dependencies
 
 The following dependencies are required for the plugin to work as intended:
-- ChestShop-3 v3.12
+- ChestShop v3.12
 - LuckPerms v5.4
 
 ## Config File
