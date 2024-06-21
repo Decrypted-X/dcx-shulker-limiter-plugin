@@ -7,7 +7,8 @@ A Minecraft server plugin that limits the number of shulker boxes that an invent
 ## Dependencies
 
 The following dependencies are required for the plugin to work as intended:
-- ChestShop-3
+- ChestShop-3 v3.12
+- LuckPerms v5.4
 
 ## Config File
 > [!NOTE]
@@ -27,8 +28,7 @@ permission node.
 `OtherShulkerLimit` - The shulker box limit for all other inventories; no permission node corresponds
 to this config.
 
-`AdditivePermission` - Whether the player and ender chest shulker box limits should be added together as the limit for
-all player-related inventories.
+`AdditivePermission` - Whether all permission nodes of a given type should be added together.
 
 ### Example Config File
 The following shows an example of the config file generated:

@@ -1,6 +1,9 @@
 package me.decryptedx.dcxshulkerlimiter;
 
 import com.Acrobot.ChestShop.Events.PreTransactionEvent;
+import net.luckperms.api.LuckPerms;
+import net.luckperms.api.node.Node;
+import net.luckperms.api.query.QueryOptions;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -14,8 +17,8 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.permissions.PermissionAttachmentInfo;
 
+import java.util.List;
 import java.util.logging.Level;
 
 /// Listen to various inventory events.
@@ -29,7 +32,7 @@ public class InventoryListener implements Listener {
     /// The number of shulker boxes other inventories can have given by plugin configs.
     private final int CONF_SHULKER_OTHER_LIMIT;
 
-    /// Whether the limit of shulker boxes held is a total of all the configurations.
+    /// Whether the limit of shulker boxes held is a total of all the config nodes.
     private final boolean CONF_ADDITIVE;
 
     /// The prefix for the player shulker permission node.
@@ -153,31 +156,53 @@ public class InventoryListener implements Listener {
         };
     }
 
+    /**Get the number of shulker boxes the player can hold.
+     *
+     * @param player The player to get the shulker limit from.
+     * @param prefix The prefix to use to get the shulker limit permission.
+     * @param defaultValue The default value to use if no permission is found.
+     * @param additive Whether the permission nodes for each player should be added.
+     * @return The number of shulker boxes the player can hold.
+     */
     public int getShulkerLimit(Player player, String prefix, int defaultValue, boolean additive) {
-        if (player == null) return defaultValue;
+        if (player == null)
+            return defaultValue;
 
+        final LuckPerms permissionProvider = DCXShulkerLimiterPlugin.getLuckPerms();
         final int amount;
 
+        final List<Node> permissions = permissionProvider.getPlayerAdapter(Player.class)
+                                                         .getUser(player)
+                                                         .resolveInheritedNodes(QueryOptions.nonContextual())
+                                                         .stream().toList();
+
         try {
+            // sum shulker permissions if additive; otherwise, get max value
             if (additive) {
-                amount = player.getEffectivePermissions().stream()
-                               .map(PermissionAttachmentInfo::getPermission)
-                               .filter(permission -> permission.startsWith(prefix))
-                               .mapToInt(InventoryListener::integerValueFromPermission)
-                               .sum();
+                amount = permissions
+                        .stream()
+                        .filter(Node::getValue) // only true nodes
+                        .filter(node -> !node.hasExpired())
+                        .map(Node::getKey)
+                        .filter(permission -> permission.startsWith(prefix))
+                        .mapToInt(InventoryListener::integerValueFromPermission)
+                        .sum();
             }
             else {
-                amount = player.getEffectivePermissions().stream()
-                               .map(PermissionAttachmentInfo::getPermission)
-                               .filter(permission -> permission.startsWith(prefix))
-                               .mapToInt(InventoryListener::integerValueFromPermission)
-                               .max()
-                               .orElse(defaultValue);
+                amount = permissions
+                        .stream()
+                        .filter(Node::getValue) // only true nodes
+                        .filter(node -> !node.hasExpired())
+                        .map(Node::getKey)
+                        .filter(permission -> permission.startsWith(prefix))
+                        .mapToInt(InventoryListener::integerValueFromPermission)
+                        .max()
+                        .orElse(defaultValue);
             }
-        } catch (NumberFormatException | IndexOutOfBoundsException e) {
-            Bukkit.getLogger().log(Level.SEVERE,
-                    "Permission node " + prefix + " for " + player.getName() +
-                            " has a non-integer value, returning default.");
+        }
+        catch (Exception e) {
+            Bukkit.getLogger().log(Level.SEVERE, "Exception while getting shulker limit for " +
+                    player.getName() + ", returning default.", e);
             return defaultValue;
         }
 

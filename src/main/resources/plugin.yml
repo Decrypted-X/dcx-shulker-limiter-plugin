@@ -5,3 +5,4 @@ main: me.decryptedx.dcxshulkerlimiter.DCXShulkerLimiterPlugin
 api-version: 1.18
 depend:
   - ChestShop-3
+  - LuckPerms
