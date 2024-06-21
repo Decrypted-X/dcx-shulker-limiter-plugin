@@ -155,8 +155,17 @@ public class InventoryListener implements Listener {
         };
     }
 
+    /**Get the number of shulker boxes the player can hold.
+     *
+     * @param player The player to get the shulker limit from.
+     * @param prefix The prefix to use to get the shulker limit permission.
+     * @param defaultValue The default value to use if no permission is found.
+     * @param additive Whether the permission nodes for each player should be added.
+     * @return The number of shulker boxes the player can hold.
+     */
     public int getShulkerLimit(Player player, String prefix, int defaultValue, boolean additive) {
-        if (player == null) return defaultValue;
+        if (player == null)
+            return defaultValue;
 
         final LuckPerms permissionProvider = DCXShulkerLimiterPlugin.getLuckPerms();
         final int amount;
@@ -165,7 +174,9 @@ public class InventoryListener implements Listener {
                                                          .getUser(player)
                                                          .resolveInheritedNodes(QueryOptions.nonContextual())
                                                          .stream().toList();
+
         try {
+            // sum shulker permissions if additive; otherwise, get max value
             if (additive) {
                 amount = permissions
                         .stream()
@@ -187,8 +198,10 @@ public class InventoryListener implements Listener {
                         .max()
                         .orElse(defaultValue);
             }
-        } catch (Exception e) {
-            Bukkit.getLogger().log(Level.SEVERE, "Exception while getting shulker limit for " + player.getName() + ", returning default.", e);
+        }
+        catch (Exception e) {
+            Bukkit.getLogger().log(Level.SEVERE, "Exception while getting shulker limit for " +
+                    player.getName() + ", returning default.", e);
             return defaultValue;
         }
 
