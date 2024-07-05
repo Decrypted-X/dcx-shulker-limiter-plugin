@@ -1,6 +1,7 @@
 package me.decryptedx.dcxshulkerlimiter;
 
 import com.Acrobot.ChestShop.Events.PreTransactionEvent;
+import com.Acrobot.ChestShop.Events.TransactionEvent;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.node.Node;
 import net.luckperms.api.query.QueryOptions;
@@ -373,7 +374,8 @@ public class InventoryListener implements Listener {
     @EventHandler (priority = EventPriority.LOWEST)
     public void onPreTransactionEvent(PreTransactionEvent event) {
         // cancel any additional shulker boxes from being bought through chest shops
-        if (checkMaxShulker(event.getClientInventory(), event.getClient()))
+        if (event.getTransactionType() == TransactionEvent.TransactionType.BUY &&
+                checkMaxShulker(event.getClientInventory(), event.getClient()))
             event.setCancelled(PreTransactionEvent.TransactionOutcome.NOT_ENOUGH_SPACE_IN_INVENTORY);
     }
 }

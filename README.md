@@ -1,5 +1,5 @@
 # DCX Shulker Limiter Plugin
-![Plugin Version](https://img.shields.io/badge/plugin_version-1.2.0-blue)
+![Plugin Version](https://img.shields.io/badge/plugin_version-1.2.1-blue)
 ![Minecraft Version](https://img.shields.io/badge/mc_version-1.18.2-blue)
 
 A Minecraft server plugin that limits the number of shulker boxes that an inventory can hold.
