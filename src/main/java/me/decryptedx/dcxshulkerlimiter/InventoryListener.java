@@ -16,8 +16,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.*;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.*;
 
 import java.util.List;
 import java.util.logging.Level;
@@ -343,11 +342,18 @@ public class InventoryListener implements Listener {
                     inventoryType == InventoryType.MERCHANT) && containsShulkerBox(otherInventory, 1)) {
 
                 ItemStack[] otherContents = otherInventory.getContents();
+                ItemStack ignoreItem = null;
+
+                if (inventoryType == InventoryType.CRAFTING || inventoryType == InventoryType.WORKBENCH)
+                    ignoreItem = ((CraftingInventory) otherInventory).getResult();
 
                 for (int i = 0; i < otherContents.length; ++i) {
                     currentItem = otherContents[i];
 
-                    if (currentItem != null && isShulkerBox(currentItem.getType()) && currentShulker++ >= maxShulker) {
+                    if (ignoreItem != null && ignoreItem.equals(currentItem)) {
+                        ignoreItem = null;
+                    }
+                    else if (currentItem != null && isShulkerBox(currentItem.getType()) && currentShulker++ >= maxShulker) {
                         otherInventory.setItem(i, new ItemStack(Material.AIR));
                         Item droppedItem = player.getWorld().dropItemNaturally(player.getLocation(), currentItem);
                         droppedItem.setPickupDelay(40);
