@@ -2,6 +2,7 @@ package me.decryptedx.dcxshulkerlimiter;
 
 import com.Acrobot.ChestShop.Events.PreTransactionEvent;
 import com.Acrobot.ChestShop.Events.TransactionEvent;
+import com.destroystokyo.paper.event.player.PlayerRecipeBookClickEvent;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.node.Node;
 import net.luckperms.api.query.QueryOptions;
@@ -383,5 +384,32 @@ public class InventoryListener implements Listener {
         if (event.getTransactionType() == TransactionEvent.TransactionType.BUY &&
                 checkMaxShulker(event.getClientInventory(), event.getClient()))
             event.setCancelled(PreTransactionEvent.TransactionOutcome.NOT_ENOUGH_SPACE_IN_INVENTORY);
+    }
+
+    @EventHandler (priority = EventPriority.LOWEST)
+    public void onCraftItemEvent(PlayerRecipeBookClickEvent event) {
+        // cancel any additional shulker boxes from being retrieved from crafting when loading a recipe
+        Player player = event.getPlayer();
+        int currentShulker = getShulkerBoxAmount(player);
+        int maxShulker = PermissionLimitExtractor.getLimit(player, PLAYER_PERM_PREFIX, CONF_SHULKER_PLAYER_LIMIT);
+        Inventory otherInventory = player.getOpenInventory().getTopInventory();
+
+        ItemStack currentItem;
+        ItemStack[] otherContents = otherInventory.getContents();
+        ItemStack ignoreItem = ((CraftingInventory) otherInventory).getResult();
+
+        // drop any shulker boxes that would exceed max inventory limit
+        for (int i = 0; i < otherContents.length; ++i) {
+            currentItem = otherContents[i];
+
+            if (ignoreItem != null && ignoreItem.equals(currentItem)) {
+                ignoreItem = null;
+            }
+            else if (currentItem != null && isShulkerBox(currentItem.getType()) && currentShulker++ >= maxShulker) {
+                otherInventory.setItem(i, new ItemStack(Material.AIR));
+                Item droppedItem = player.getWorld().dropItemNaturally(player.getLocation(), currentItem);
+                droppedItem.setPickupDelay(40);
+            }
+        }
     }
 }
